@@ -1,0 +1,15 @@
+info:
+  app:
+    name: @project.artifactId@
+    version: @project.version@
+spring:
+  output:
+    ansi:
+      enabled: always
+server:
+  port: 8085
+
+scheduler:
+  thread:
+    pool:
+      size: 5
