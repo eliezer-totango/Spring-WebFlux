@@ -42,7 +42,9 @@ public class RoutingController {
                                     logger.error("failed to get data for user-id {} ERROR {}", userId, e);
                                     return Flux.empty();
                                 })
-                                .doOnNext(tweet -> logger.info("done to get Tweet data {} for user-id {}", tweet, userId))
+                                .doOnComplete(() -> logger.info("Complete to get Tweet data {} for user-id {}", userId))
+                                .doOnNext(tweet -> logger.info("doOnNext starting to get Tweet data {} for user-id {}", tweet, userId))
+
                         , 100, 1)
                 .collectList()
                 .block();
@@ -67,9 +69,9 @@ public class RoutingController {
     @GetMapping("/slow-service-Tweets/{userId}")
     private List<Tweet> getAllTweets(@PathVariable int userId) throws Exception {
         logger.info("getAllTweets of user {}", userId);
-        if (userId == 1) {
-            throw new RuntimeException("failed for user id: " + userId);
-        }
+//        if (userId == 1) {
+//            throw new RuntimeException("failed for user id: " + userId);
+//        }
         Thread.sleep(5000L); // delay
         return Arrays.asList(
                 new Tweet("RestTemplate rules", userId + "@gmail.com"),

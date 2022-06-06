@@ -39,7 +39,7 @@ public class ReteLimitedTest {
     private RoutingController routingController;
 
     @Test
-    public void reteLimitedTest() throws InterruptedException {
+    public void reteLimitedTest() {
         List<Tweet> tweetsNonBlocking = routingController.getTweetsNonBlocking();
     }
 
