@@ -11,9 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,11 +24,11 @@ public class ReteLimitedTest {
     @Value("${server.port}")
     private String port;
     private static final String localhost = "http://localhost:";
-    public static String perimeterXFullUrl;
+    public static String selfFullUrl;
 
     @BeforeEach
     public void setUp() {
-        perimeterXFullUrl = localhost + port;
+        selfFullUrl = localhost + port;
     }
 
     @Autowired
@@ -38,9 +37,17 @@ public class ReteLimitedTest {
     @Autowired
     private RoutingController routingController;
 
+    @Autowired
+    private TweetTaskService tweetTaskService;
+
     @Test
     public void reteLimitedTest() {
         List<Tweet> tweetsNonBlocking = routingController.getTweetsNonBlocking();
+    }
+
+    @Test
+    public void test() {
+        List<Tweet> tweetList = tweetTaskService.getAllTweet(Arrays.asList("1","2"));
     }
 
 }
