@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Component
 public class TweetTaskServiceImpl implements TweetTaskService {
@@ -43,31 +44,26 @@ public class TweetTaskServiceImpl implements TweetTaskService {
     }
 
     @Override
-    public List<Tweet> getAllTweet(List<String> userIdsList){
-            List<String> allServiceIdToUpdate = userIdsList;
-            final List<CompletableFuture<List<Tweet>>> futures = executeTasks(allServiceIdToUpdate);
-            List<Tweet> tweets = waitUntilFinishedAllTasksExecutions(futures);
-            logger.info("done to get all tweets {}", Arrays.toString(tweets.toArray()));
-            return tweets;
+    public List<Tweet> getAllTweet(List<String> userIdsList) {
+        List<String> allServiceIdToUpdate = userIdsList;
+        final List<CompletableFuture<List<Tweet>>> futures = executeTasks(allServiceIdToUpdate);
+        List<Tweet> tweets = waitUntilFinishedAllTasksExecutions(futures);
+        logger.info("done to get all tweets {}", Arrays.toString(tweets.toArray()));
+        return tweets;
     }
 
     private List<CompletableFuture<List<Tweet>>> executeTasks(List<String> allUserIdToUpdate) {
         AtomicInteger updaterCounter = new AtomicInteger();
-        List<CompletableFuture<List<Tweet>>> completableFutures = new ArrayList<>();
-        for (String userId : allUserIdToUpdate) {
-            CompletableFuture<List<Tweet>> futureResult = CompletableFuture
-                    .supplyAsync(() -> updateServiceDefaults(userId, updaterCounter, allUserIdToUpdate.size())
-                            , executorService)
-                    .handle((res, ex) -> {
-                        if (ex != null) {
+        return allUserIdToUpdate.stream().map(userId -> CompletableFuture
+                        .supplyAsync(() -> updateServiceDefaults(userId), executorService)
+                        .handle((res, ex) -> {
                             printProgress(updaterCounter, allUserIdToUpdate.size());
-                            return doOnError(userId, ex.getMessage());
-                        }
-                        return res;
-                    });
-            completableFutures.add(futureResult);
-        }
-        return completableFutures;
+                            if (ex != null) {
+                                return doOnError(userId, ex.getMessage());
+                            }
+                            return res;
+                        }))
+                .collect(Collectors.toList());
     }
 
     private void printProgress(AtomicInteger updaterCounter, int totalServicesToUpdate) {
@@ -95,18 +91,10 @@ public class TweetTaskServiceImpl implements TweetTaskService {
         return allTweet;
     }
 
-    private List<Tweet> updateServiceDefaults(final String serviceId, AtomicInteger updaterCounter, final int totalServicesToUpdate) {
-        List<Tweet> tweets;
-        try {
-            LocalDateTime start = LocalDateTime.now();
-            tweets = restTemplate.getForObject(UPDATE_SERVICE_DEFAULTS_URL + serviceId, List.class);
-            logger.info("serviceId '{}' update successfully. total time {}", serviceId, Duration.between(start, LocalDateTime.now()));
-            printProgress(updaterCounter, totalServicesToUpdate);
-        } catch (Exception ex) {
-            return doOnError(serviceId, ex.getMessage());
-        } finally {
-            printProgress(updaterCounter, totalServicesToUpdate);
-        }
+    private List<Tweet> updateServiceDefaults(final String serviceId) {
+        LocalDateTime start = LocalDateTime.now();
+        List<Tweet> tweets = restTemplate.getForObject(UPDATE_SERVICE_DEFAULTS_URL + serviceId, List.class);
+        logger.info("serviceId '{}' update successfully. total time {}", serviceId, Duration.between(start, LocalDateTime.now()));
         return tweets;
     }
 
